@@ -3,8 +3,13 @@
 import streamlit as st
 import pandas as pd
 import datetime
+import openai
+import os
 
 st.set_page_config(page_title="Conversational Case Builder", layout="wide")
+
+# Secure API Key loading
+openai.api_key = st.secrets["OPENAI_API_KEY"] if "OPENAI_API_KEY" in st.secrets else os.getenv("OPENAI_API_KEY")
 
 if 'messages' not in st.session_state:
     st.session_state.messages = []
@@ -14,38 +19,28 @@ if 'messages' not in st.session_state:
     st.session_state.cleaning = ""
     st.session_state.insights = ""
 
-# Agent logic
+# LLM-backed reply
 class ConversationalCaseAgent:
     def reply(self, user_input):
-        if "upload" in user_input.lower():
-            return "Please upload your dataset using the uploader below."
-        if "analyze" in user_input.lower():
-            st.session_state.goal = user_input
-            return "Got it. What's the specific business problem you'd like to solve?"
-        if "problem" in user_input.lower() or "goal" in user_input.lower():
-            st.session_state.problem = user_input
-            return "Thanks. Would you like help cleaning the dataset next?"
-        if "clean" in user_input.lower():
-            st.session_state.cleaning = "Remove nulls, convert dates, drop duplicates."
-            return "Noted. I recommend: Remove nulls, convert date columns, drop duplicates. Shall I continue with insights?"
-        if "insight" in user_input.lower() or "summary" in user_input.lower():
-            st.session_state.insights = "Top products drive most revenue. Loyalty users churn less. Seasonal spike in Q4."
-            return "Summary noted: Top products drive most revenue. Loyalty users churn less. Seasonal spike in Q4. Would you like me to draft your case study now?"
-        if "suggest" in user_input.lower() and "analysis" in user_input.lower() and st.session_state.dataset is not None:
-            columns = st.session_state.dataset.columns.tolist()
-            suggestions = [
-                f"1. Correlation between CGPA and Study Satisfaction",
-                f"2. Impact of Academic Pressure on Sleep Duration",
-                f"3. Relationship between Job Satisfaction and Suicidal Thoughts"
-            ] if "CGPA" in columns else [
-                f"1. Segmenting users by Age and Satisfaction",
-                f"2. Analyzing impact of Work Pressure on Mental Health",
-                f"3. Identifying high-performing student groups"
-            ]
-            return "Here are 3 analysis ideas you can explore:\n" + "\n".join(suggestions)
-        if user_input.lower() in ["yes", "okay", "go ahead"] and st.session_state.dataset is not None:
-            return "Let me inspect the dataset. What kind of patterns or business goals are you exploring?"
-        return "Thanks. Let's continue building your case study. You can ask for help, cleaning tips, or summary anytime."
+        chat_history = st.session_state.messages[-6:]  # use last few messages as context
+        history_messages = [
+            {"role": msg["role"], "content": msg["content"]} for msg in chat_history
+        ]
+        prompt = {
+            "role": "user",
+            "content": f"Dataset columns: {st.session_state.dataset.columns.tolist() if st.session_state.dataset is not None else 'none'}\nQuestion: {user_input}"
+        }
+        history_messages.append(prompt)
+        try:
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=history_messages,
+                temperature=0.7
+            )
+            reply_text = response.choices[0].message.content.strip()
+        except Exception as e:
+            reply_text = f"⚠️ LLM Error: {str(e)}"
+        return reply_text
 
     def generate_case_report(self):
         today = datetime.date.today().strftime("%B %d, %Y")
