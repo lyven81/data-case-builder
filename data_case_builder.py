@@ -19,10 +19,10 @@ if 'messages' not in st.session_state:
     st.session_state.cleaning = ""
     st.session_state.insights = ""
 
-# LLM-backed reply
+# LLM-backed reply (using openai>=1.0 syntax)
 class ConversationalCaseAgent:
     def reply(self, user_input):
-        chat_history = st.session_state.messages[-6:]  # use last few messages as context
+        chat_history = st.session_state.messages[-6:]
         history_messages = [
             {"role": msg["role"], "content": msg["content"]} for msg in chat_history
         ]
@@ -32,7 +32,7 @@ class ConversationalCaseAgent:
         }
         history_messages.append(prompt)
         try:
-            response = openai.ChatCompletion.create(
+            response = openai.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=history_messages,
                 temperature=0.7
