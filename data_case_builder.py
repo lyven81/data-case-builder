@@ -1,6 +1,7 @@
 # data_case_builder.py
 
 import streamlit as st
+import pandas as pd
 
 class DataCaseBuilderAgent:
     def __init__(self):
@@ -22,13 +23,13 @@ class DataCaseBuilderAgent:
 
     def describe_dataset(self, desc):
         self.dataset_description = desc
-        return f"收到的数据集描述：{desc}"
+        return f"Dataset description received: {desc}"
 
     def define_problem(self, problem, ideas, target):
         self.problem = problem
         self.analysis_ideas = ideas
         self.target_group = target
-        return f"问题已定义：{problem}，目标受众为：{target}"
+        return f"Problem defined: {problem}, Target audience: {target}"
 
     def business_context(self, goals, stakeholders, unknowns):
         self.business_goals = goals
@@ -37,7 +38,7 @@ class DataCaseBuilderAgent:
 
     def cleaning_recommendations(self, summary, steps):
         self.cleaning_steps = steps
-        return f"数据清洗建议：{steps}"
+        return f"Cleaning steps recommended: {steps}"
 
     def colab_cleaning_code(self):
         code = f"""
@@ -45,15 +46,15 @@ class DataCaseBuilderAgent:
 from google.colab import files
 import pandas as pd
 
-uploaded = files.upload()  # 上传 CSV 文件
+uploaded = files.upload()  # Upload CSV file
 
-# 加载数据
+# Load data
 raw_df = pd.read_csv('dataset.csv')
 
-# 清洗步骤（根据推荐进行修改）
+# Cleaning steps (modify as needed)
 {self.cleaning_steps}
 
-# 导出清洗后的数据
+# Export cleaned data
 raw_df.to_csv('cleaned_dataset.csv', index=False)
 files.download('cleaned_dataset.csv')
         """
@@ -76,70 +77,77 @@ files.download('cleaned_dataset.csv')
 # === Streamlit App ===
 def main():
     st.title("📊 Data Case Builder Agent")
-    st.write("为数据分析项目构建完整的案例研究报告")
+    st.write("Build a complete data case study report step-by-step")
 
     agent = DataCaseBuilderAgent()
 
-    st.header("Step 0: 数据集描述")
-    dataset_desc = st.text_area("请描述数据集内容和字段：")
-    if dataset_desc:
+    st.header("Step 0: Upload and Describe Dataset")
+    uploaded_file = st.file_uploader("Upload a CSV file:", type=["csv"])
+    if uploaded_file is not None:
+        df = pd.read_csv(uploaded_file)
+        st.session_state['dataset_df'] = df
+        st.success("✅ Dataset uploaded successfully! Here's a preview:")
+        st.dataframe(df.head())
+
+    dataset_desc = st.text_area("Describe the structure, fields, or potential use of this dataset:")
+    if dataset_desc and 'dataset_df' in st.session_state:
         st.success(agent.describe_dataset(dataset_desc))
 
-    st.header("Step 1: 问题定义")
-    problem = st.text_input("请简要描述业务问题或分析目标：")
-    ideas = st.text_area("基于数据集，你推荐进行哪三项分析？每项用换行分隔：").splitlines()
-    target = st.text_input("谁最关心这些发现？（目标受众）：")
+    st.header("Step 1: Define the Problem")
+    problem = st.text_input("Briefly describe the business problem or goal:")
+    ideas = st.text_area("What 3 types of analysis would you recommend based on this dataset? (One per line):").splitlines()
+    target = st.text_input("Who would benefit most from these insights? (Target audience):")
     if problem and ideas and target:
         st.success(agent.define_problem(problem, ideas, target))
 
-    st.subheader("详细业务背景")
-    goals = st.text_area("1. 公司希望达成的业务目标：")
-    stakeholders = st.text_area("2. 谁是关键利益相关者？他们的需求是什么？")
-    unknowns = st.text_area("3. 有哪些关键未知？")
+    st.subheader("Business Context")
+    goals = st.text_area("1. What are the business goals?")
+    stakeholders = st.text_area("2. Who are the key stakeholders and their needs?")
+    unknowns = st.text_area("3. What are the major unknowns?")
     if goals and stakeholders and unknowns:
         agent.business_context(goals, stakeholders, unknowns)
-        st.info("业务背景信息已记录。")
+        st.info("Business context saved.")
 
-    st.header("Step 2: 数据准备")
-    summary = st.text_area("请用要点总结问题、目标、数据思路：")
-    cleaning_steps = st.text_area("推荐的清洗步骤（转换格式、处理缺失值等）：")
+    st.header("Step 2: Data Preparation")
+    summary = st.text_area("Summarize the problem, goals, and data approach:")
+    cleaning_steps = st.text_area("Recommended data cleaning steps (e.g., format conversion, missing value handling):")
     if cleaning_steps:
         st.code(agent.cleaning_recommendations(summary, cleaning_steps))
 
-    if st.button("生成 Colab 清洗代码"):
+    if st.button("Generate Colab Cleaning Code"):
         st.code(agent.colab_cleaning_code())
 
-    st.header("Step 3: 分析建议")
-    analysis_plan = st.text_area("请提出你准备进行的分析、使用的图表类型及目的：")
+    st.header("Step 3: Analysis Suggestions")
+    analysis_plan = st.text_area("Describe the planned analysis, types of charts, and purpose:")
     if analysis_plan:
         st.success(agent.generate_analysis_summary(analysis_plan))
 
-    st.header("Step 4: 总结洞察 & 案例准备")
-    insights = st.text_area("请总结分析中的关键洞察，聚焦业务价值：")
-    overview = st.text_area("请撰写案例概述（背景 + 目的）：")
-    findings = st.text_area("总结关键发现：")
+    st.header("Step 4: Summarize Insights & Draft Report")
+    insights = st.text_area("Summarize key insights focusing on business value:")
+    overview = st.text_area("Write a brief case overview (background + purpose):")
+    findings = st.text_area("Summarize key findings:")
     if insights and overview and findings:
         agent.summarize_insights(insights, overview, findings)
-        st.info("洞察和案例概述已保存。")
+        st.info("Insights and case overview saved.")
 
-    st.header("Step 5: 案例标题建议")
-    tone = st.selectbox("你希望标题呈现什么风格？", ["专业正式", "吸引注意", "带一点幽默"])
-    titles = st.text_area("请提供三个相关标题建议，每个换行：").splitlines()
+    st.header("Step 5: Recommend Titles")
+    tone = st.selectbox("What tone should the titles have?", ["Professional", "Attention-Grabbing", "Light and Playful"])
+    titles = st.text_area("Suggest three case study titles (one per line):").splitlines()
     if tone and titles:
         agent.suggest_case_titles(tone, titles)
-        st.write("🎯 建议标题：")
+        st.write("🎯 Suggested Titles:")
         for t in titles:
             st.markdown(f"- {t}")
 
-    st.header("Step 6: 最终汇总")
-    if st.button("导出草稿报告"):
-        st.subheader("📄 报告草稿预览")
-        st.markdown(f"**概述：** {agent.case_overview}")
-        st.markdown(f"**分析目标：** {agent.problem}")
-        st.markdown(f"**建议分析：** {'; '.join(agent.analysis_ideas)}")
-        st.markdown(f"**关键洞察：** {agent.insight_summary}")
-        st.markdown(f"**结论与发现：** {agent.key_findings}")
-        st.markdown(f"**推荐标题：** {', '.join(agent.case_study_title)}")
+    st.header("Step 6: Final Report Preview")
+    if st.button("Export Draft Report"):
+        st.subheader("📄 Report Draft")
+        st.markdown(f"**Overview:** {agent.case_overview}")
+        st.markdown(f"**Business Problem:** {agent.problem}")
+        st.markdown(f"**Recommended Analyses:** {'; '.join(agent.analysis_ideas)}")
+        st.markdown(f"**Key Insights:** {agent.insight_summary}")
+        st.markdown(f"**Conclusions & Findings:** {agent.key_findings}")
+        st.markdown(f"**Suggested Titles:** {', '.join(agent.case_study_title)}")
 
 if __name__ == "__main__":
     main()
