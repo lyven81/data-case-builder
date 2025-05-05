@@ -25,6 +25,86 @@ class DataCaseBuilderAgent:
         self.dataset_description = desc
         return f"Dataset description received: {desc}"
 
+    def suggest_problems(self):
+        return [
+            "Identify top-performing product categories",
+            "Detect customer churn risk",
+            "Forecast future sales",
+            "Compare sales by region",
+            "Find customer lifetime value drivers"
+        ]
+
+    def suggest_analysis_types(self):
+        return [
+            "Sales trend over time",
+            "Segmentation by customer type",
+            "Correlation analysis",
+            "Product ranking by revenue",
+            "Retention rate visualization"
+        ]
+
+    def suggest_target_audience(self):
+        return [
+            "Marketing Team",
+            "Sales Manager",
+            "Executive Leadership",
+            "Product Development",
+            "Customer Success"
+        ]
+
+    def suggest_cleaning_steps(self):
+        return [
+            "Drop rows with missing values",
+            "Convert date columns to datetime format",
+            "Remove duplicates",
+            "Standardize column names",
+            "Filter outliers"
+        ]
+
+    def suggest_analysis_plan(self):
+        return [
+            "Use line charts to observe sales trends",
+            "Apply bar charts for product comparison",
+            "Use scatter plots for correlation insights",
+            "Create pie charts for segment distribution",
+            "Use boxplots for outlier detection"
+        ]
+
+    def suggest_insight_summaries(self):
+        return [
+            "Revenue is driven by a few top-selling products",
+            "Customer retention correlates with loyalty program participation",
+            "Sales peak around promotional campaigns",
+            "Region X consistently underperforms compared to others",
+            "High product return rate impacts profitability"
+        ]
+
+    def suggest_case_overviews(self):
+        return [
+            "This case study explores product performance across categories to identify revenue opportunities.",
+            "We analyze sales trends and customer segments to guide strategic decisions.",
+            "The goal is to uncover drivers of retention and customer value.",
+            "We examine regional patterns and campaign effectiveness to guide marketing."
+        ]
+
+    def suggest_key_findings(self):
+        return [
+            "Top 3 products contribute 65% of sales",
+            "Churn risk is highest among low-frequency buyers",
+            "Retention is stronger in loyalty program members",
+            "Sales increased by 40% during campaign periods",
+            "Customer satisfaction scores drop after shipping delays"
+        ]
+
+    def suggest_case_titles(self):
+        return [
+            "Uncovering Revenue Drivers",
+            "Predicting Churn Before It Happens",
+            "The Power of Loyalty",
+            "Campaigns That Convert",
+            "Why Customers Leave"
+        ]
+
     def define_problem(self, problem, ideas, target):
         self.problem = problem
         self.analysis_ideas = ideas
@@ -70,7 +150,7 @@ files.download('cleaned_dataset.csv')
         self.case_overview = overview
         self.key_findings = findings
 
-    def suggest_case_titles(self, tone, titles):
+    def suggest_case_titles_final(self, tone, titles):
         self.case_title_tone = tone
         self.case_study_title = titles
 
@@ -94,9 +174,9 @@ def main():
         st.success(agent.describe_dataset(dataset_desc))
 
     st.header("Step 1: Define the Problem")
-    problem = st.text_input("Briefly describe the business problem or goal:")
-    ideas = st.text_area("What 3 types of analysis would you recommend based on this dataset? (One per line):").splitlines()
-    target = st.text_input("Who would benefit most from these insights? (Target audience):")
+    problem = st.selectbox("Select a business problem or goal:", agent.suggest_problems())
+    ideas = st.multiselect("Select up to 3 types of analysis to recommend:", agent.suggest_analysis_types(), max_selections=3)
+    target = st.selectbox("Select the target audience for these insights:", agent.suggest_target_audience())
     if problem and ideas and target:
         st.success(agent.define_problem(problem, ideas, target))
 
@@ -109,32 +189,32 @@ def main():
         st.info("Business context saved.")
 
     st.header("Step 2: Data Preparation")
-    summary = st.text_area("Summarize the problem, goals, and data approach:")
-    cleaning_steps = st.text_area("Recommended data cleaning steps (e.g., format conversion, missing value handling):")
+    summary = st.selectbox("Summarize the problem, goals, and data approach:", agent.suggest_case_overviews())
+    cleaning_steps = st.multiselect("Select data cleaning steps:", agent.suggest_cleaning_steps(), max_selections=3)
     if cleaning_steps:
-        st.code(agent.cleaning_recommendations(summary, cleaning_steps))
+        st.code(agent.cleaning_recommendations(summary, '; '.join(cleaning_steps)))
 
     if st.button("Generate Colab Cleaning Code"):
         st.code(agent.colab_cleaning_code())
 
     st.header("Step 3: Analysis Suggestions")
-    analysis_plan = st.text_area("Describe the planned analysis, types of charts, and purpose:")
+    analysis_plan = st.selectbox("Select an analysis plan:", agent.suggest_analysis_plan())
     if analysis_plan:
         st.success(agent.generate_analysis_summary(analysis_plan))
 
     st.header("Step 4: Summarize Insights & Draft Report")
-    insights = st.text_area("Summarize key insights focusing on business value:")
-    overview = st.text_area("Write a brief case overview (background + purpose):")
-    findings = st.text_area("Summarize key findings:")
+    insights = st.selectbox("Select a key insight:", agent.suggest_insight_summaries())
+    overview = st.selectbox("Select a case overview:", agent.suggest_case_overviews())
+    findings = st.selectbox("Select key findings:", agent.suggest_key_findings())
     if insights and overview and findings:
         agent.summarize_insights(insights, overview, findings)
         st.info("Insights and case overview saved.")
 
     st.header("Step 5: Recommend Titles")
     tone = st.selectbox("What tone should the titles have?", ["Professional", "Attention-Grabbing", "Light and Playful"])
-    titles = st.text_area("Suggest three case study titles (one per line):").splitlines()
+    titles = st.multiselect("Select up to 3 case study titles:", agent.suggest_case_titles(), max_selections=3)
     if tone and titles:
-        agent.suggest_case_titles(tone, titles)
+        agent.suggest_case_titles_final(tone, titles)
         st.write("🎯 Suggested Titles:")
         for t in titles:
             st.markdown(f"- {t}")
