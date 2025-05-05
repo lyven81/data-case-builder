@@ -32,7 +32,8 @@ class ConversationalCaseAgent:
         }
         history_messages.append(prompt)
         try:
-            response = openai.chat.completions.create(
+            client = openai.OpenAI(api_key=openai.api_key)
+            response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=history_messages,
                 temperature=0.7
