@@ -31,9 +31,21 @@ class ConversationalCaseAgent:
         if "insight" in user_input.lower() or "summary" in user_input.lower():
             st.session_state.insights = "Top products drive most revenue. Loyalty users churn less. Seasonal spike in Q4."
             return "Summary noted: Top products drive most revenue. Loyalty users churn less. Seasonal spike in Q4. Would you like me to draft your case study now?"
+        if "suggest" in user_input.lower() and "analysis" in user_input.lower() and st.session_state.dataset is not None:
+            columns = st.session_state.dataset.columns.tolist()
+            suggestions = [
+                f"1. Correlation between CGPA and Study Satisfaction",
+                f"2. Impact of Academic Pressure on Sleep Duration",
+                f"3. Relationship between Job Satisfaction and Suicidal Thoughts"
+            ] if "CGPA" in columns else [
+                f"1. Segmenting users by Age and Satisfaction",
+                f"2. Analyzing impact of Work Pressure on Mental Health",
+                f"3. Identifying high-performing student groups"
+            ]
+            return "Here are 3 analysis ideas you can explore:\n" + "\n".join(suggestions)
         if user_input.lower() in ["yes", "okay", "go ahead"] and st.session_state.dataset is not None:
             return "Let me inspect the dataset. What kind of patterns or business goals are you exploring?"
-        return "Tell me more about your objective or what you'd like to discover in the data."
+        return "Thanks. Let's continue building your case study. You can ask for help, cleaning tips, or summary anytime."
 
     def generate_case_report(self):
         today = datetime.date.today().strftime("%B %d, %Y")
